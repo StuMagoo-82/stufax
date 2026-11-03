@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stufax</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0e1112">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stufax">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a calm dashboard — big clock header, site launcher row, then a 12-col grid of feed cards */
+:root{
+  --bg:#f3f4f1; --card:#ffffff; --sunk:#eceee9; --line:#e0e3dc;
+  --fg:#15181a; --dim:#6a716d; --accent:#0f8a5f; --accent-soft:#e1f2ea;
+  --shadow:0 1px 2px rgba(20,30,25,.05),0 8px 24px -12px rgba(20,30,25,.12);
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Manrope", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e1112; --card:#161a1c; --sunk:#1c2123; --line:#252b2e;
+  --fg:#eef1ef; --dim:#8c9591; --accent:#3ddc97; --accent-soft:#16302a;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -16px rgba(0,0,0,.6);
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  padding:clamp(20px,4vw,48px) max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+a{color:inherit;text-decoration:none}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.greet{margin:0;font-family:var(--display);font-weight:700;font-size:clamp(32px,5vw,52px);letter-spacing:-.02em;line-height:1}
+.greet span{color:var(--accent)}
+.sub{margin:8px 0 0;color:var(--dim);font-weight:500}
+.clock{font-family:var(--display);font-weight:500;font-size:clamp(40px,6vw,64px);line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.clock small{font-size:.45em;color:var(--dim);margin-left:4px}
+
+.top-right{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;justify-content:flex-end}
+.wxc{display:flex;flex-direction:column;align-items:flex-end;gap:4px;padding-right:24px;border-right:1px solid var(--line);min-width:0}
+.wxc-now{display:flex;align-items:center;gap:10px}
+.wxc-t{font:500 40px/1 var(--display);letter-spacing:-.03em}
+.wxc-now b{display:block;font-weight:700;font-size:14.5px;line-height:1.2}
+.wxc-loc{background:none;border:0;padding:0;color:var(--dim);font:500 13px var(--body);cursor:pointer;text-align:left}
+.wxc-loc:hover{color:var(--accent);text-decoration:underline}
+.wxc-days{display:flex;gap:14px;font:12px var(--mono);color:var(--dim)}
+.wxc-days b{color:var(--fg);font-weight:500}
+.wxc form{display:flex;gap:6px}
+.wxc input{width:150px;background:var(--card);border:1px solid var(--line);border-radius:9px;color:var(--fg);font:500 13px var(--body);padding:7px 10px}
+.wxc form button{background:var(--accent);color:#fff;border:0;border-radius:9px;font:700 13px var(--body);padding:0 12px;cursor:pointer}
+.wxc .note{font-size:12.5px;color:var(--dim)}
+@media(max-width:640px){.top-right{width:100%;justify-content:space-between}.wxc{align-items:flex-start;border-right:0;padding-right:0}}
+
+/* search */
+.search{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 6px 6px 18px;box-shadow:var(--shadow)}
+.search svg{flex:none;color:var(--dim)}
+.search input{flex:1;min-width:0;background:transparent;border:0;color:var(--fg);font:500 17px var(--body);padding:10px 0;outline:none}
+.search input::placeholder{color:var(--dim)}
+.search kbd{font:12px var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:2px 7px}
+.search button{background:var(--fg);color:var(--bg);border:0;border-radius:11px;font:600 15px var(--body);padding:11px 18px;cursor:pointer}
+
+/* site launcher */
+.sites{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.site{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;transition:transform .15s,border-color .15s,box-shadow .15s}
+.site:hover{transform:translateY(-2px);border-color:var(--c);box-shadow:var(--shadow)}
+.mono{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--c);color:#fff;font:700 17px var(--display)}
+.site b{display:block;font-weight:700;font-size:14.5px;line-height:1.2}
+.site small{display:block;color:var(--dim);font:11px var(--mono);margin-top:2px}
+
+/* cards grid */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;align-items:start}
+.card{grid-column:span 12;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+@media(min-width:920px){.s8{grid-column:span 8}.s4{grid-column:span 4}.s6{grid-column:span 6}.s7{grid-column:span 7}.s5{grid-column:span 5}}
+.head{display:flex;align-items:center;gap:10px;padding:16px 20px 4px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
+.head h2{margin:0;flex:1;font:700 18px var(--display);letter-spacing:-.01em}
+.head a,.head button{font:600 13px var(--body);color:var(--dim);background:none;border:0;cursor:pointer;padding:4px 8px;border-radius:8px}
+.head a:hover,.head button:hover{color:var(--fg);background:var(--sunk)}
+.body{padding:8px 20px 18px;min-width:0}
+.msg{color:var(--dim);padding:10px 0}
+.msg.err{color:#d2463c}
+.skel{height:14px;border-radius:6px;background:var(--sunk);margin:14px 0;animation:pulse 1.4s ease-in-out infinite}
+.skel:nth-child(2n){width:72%}
+@keyframes pulse{50%{opacity:.5}}
+
+/* list items */
+.item{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item .h{font-weight:600;min-width:0}
+.item:hover .h{color:var(--accent)}
+.item time{flex:none;font:12px var(--mono);color:var(--dim);white-space:nowrap}
+
+/* lead story */
+.lead{display:grid;gap:16px;padding:6px 0 16px}
+@media(min-width:640px){.lead{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);align-items:center}}
+.lead img{width:100%;max-width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px;display:block;background:var(--sunk)}
+.lead h3{margin:0 0 8px;font:700 clamp(20px,2.4vw,26px)/1.15 var(--display);letter-spacing:-.015em;text-wrap:balance}
+.lead p{margin:0;color:var(--dim)}
+.lead:hover h3{color:var(--accent)}
+.lead time{display:block;margin-top:10px;font:12px var(--mono);color:var(--dim)}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px 14px}
+.tile{display:flex;flex-direction:column;gap:7px;min-width:0}
+.tile img{width:100%;max-width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:var(--sunk);display:block;transition:transform .2s}
+.tile:hover img{transform:scale(1.02)}
+.tile .h{font-weight:600;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile .m{font:12px var(--mono);color:var(--dim)}
+
+/* weather */
+.wx-now{display:flex;align-items:center;gap:16px;padding:4px 0 14px}
+.wx-now .t{font:500 64px/1 var(--display);letter-spacing:-.04em}
+.wx-now .d b{display:block;font-weight:700;font-size:16px}
+.wx-now .d span{color:var(--dim);font-size:13.5px}
+.wx-days{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wx-days div{background:var(--sunk);border-radius:12px;padding:10px 12px;font-size:13px}
+.wx-days b{display:block;font-weight:700}
+.wx-days .r{font:12px var(--mono);color:var(--dim)}
+.wx-days .tt{font-variant-numeric:tabular-nums;font-weight:600;margin:2px 0}
+
+/* forms */
+.inline-form{display:flex;gap:8px;margin-top:12px}
+.inline-form input{flex:1;min-width:0;background:var(--sunk);border:1px solid var(--line);border-radius:10px;color:var(--fg);font:500 14px var(--body);padding:9px 12px}
+.inline-form button{background:var(--accent);color:#fff;border:0;border-radius:10px;font:700 14px var(--body);padding:0 16px;cursor:pointer}
+.hint{font-size:12.5px;color:var(--dim);margin:8px 0 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font:12px var(--mono);border:1px solid var(--line);border-radius:99px;padding:3px 10px;color:var(--dim);background:none;cursor:pointer}
+.chip:hover{color:#d2463c;border-color:#d2463c}
+.chlist{margin-top:14px}
+.chlist summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--fg);padding:8px 12px;background:var(--sunk);border-radius:10px;list-style:none;display:flex;align-items:center;gap:8px}
+.chlist summary::-webkit-details-marker{display:none}
+.chlist summary::before{content:"▸";color:var(--dim);transition:transform .15s}
+.chlist[open] summary::before{transform:rotate(90deg)}
+.chlist .chips{max-height:260px;overflow-y:auto;padding-right:4px}
+.filter{width:100%;margin-top:10px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;color:var(--fg);font:500 14px var(--body);padding:8px 12px}
+.foot{text-align:center;color:var(--dim);font-size:12.5px}
+.foot kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1 class="greet" id="greet">Evening, <span>Stuart</span></h1>
+      <p class="sub" id="date"></p>
+    </div>
+    <div class="top-right">
+      <div class="wxc" id="wx" aria-live="polite"></div>
+      <div class="clock" id="clock"></div>
+    </div>
+  </header>
+
+  <form class="search" action="https://www.google.com/search" method="get" role="search">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" name="q" placeholder="Search the web" autocomplete="off" aria-label="Search the web">
+    <kbd>/</kbd>
+    <button type="submit">Search</button>
+  </form>
+
+  <nav class="sites" id="sites" aria-label="Sites"></nav>
+
+  <main class="grid">
+    <section class="card s8" style="--c:#bb1919">
+      <div class="head"><span class="dot"></span><h2>BBC News</h2><a href="https://www.bbc.co.uk/news" target="_blank" rel="noopener">Open ↗</a></div>
+      <div class="body" id="bbc"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    </section>
+
+    <section class="card s4" style="--c:#c28a00">
+      <div class="head"><span class="dot"></span><h2>NI watch</h2><button type="button" id="watch-edit">Edit words</button></div>
+      <div class="body" id="watch"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    </section>
+
+    <section class="card s6" style="--c:#0f8a5f">
+      <div class="head"><span class="dot"></span><h2>Celtic News</h2><a href="https://www.bbc.co.uk/sport/football/teams/celtic" target="_blank" rel="noopener">BBC Sport ↗</a></div>
+      <div class="body" id="celtic"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    </section>
+
+    <section class="card s6" style="--c:#0f8a5f">
+      <div class="head"><span class="dot"></span><h2>Talkceltic</h2><a href="https://www.talkceltic.net/forums/whats-new/" target="_blank" rel="noopener">What's new ↗</a></div>
+      <div class="body" id="tc"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+    </section>
+
+    <section class="card s7" style="--c:#e62117">
+      <div class="head"><span class="dot"></span><h2>YouTube</h2><button type="button" id="yt-manage">Manage</button><a href="https://www.youtube.com/feed/subscriptions" target="_blank" rel="noopener">Subscriptions ↗</a></div>
+      <div class="body" id="yt"></div>
+    </section>
+
+    <section class="card s5" style="--c:#fa5c5c">
+      <div class="head"><span class="dot"></span><h2>Itch.io featured</h2><a href="https://itch.io/games/featured" target="_blank" rel="noopener">More ↗</a></div>
+      <div class="body" id="itch"><div class="skel"></div><div class="skel"></div></div>
+    </section>
+  </main>
+
+  <p class="foot">Press <kbd>1</kbd>–<kbd>7</kbd> to open a site · <kbd>/</kbd> to search · feeds refresh every 10 minutes<br>
+    <button type="button" class="chip" id="copy-settings">Copy my settings for the locker</button>
+    <button type="button" class="chip" id="lock-device" hidden>Lock this device</button></p>
+  <textarea id="settings-out" class="filter" rows="4" hidden aria-label="Your settings" readonly></textarea>
+</div>
+
+<script>
+/* ===== Settings you can edit ===== */
+const SITES = [
+  {name:"BBC News",   url:"https://www.bbc.co.uk/news",  host:"bbc.co.uk",     m:"B", c:"#bb1919"},
+  {name:"Facebook",   url:"https://www.facebook.com",    host:"facebook.com",  m:"f", c:"#1877f2"},
+  {name:"X",          url:"https://x.com",               host:"x.com",         m:"X", c:"#111111"},
+  {name:"Talkceltic", url:"https://www.talkceltic.net",  host:"talkceltic.net",m:"T", c:"#0f8a5f"},
+  {name:"Itch.io",    url:"https://itch.io",             host:"itch.io",       m:"i", c:"#fa5c5c"},
+  {name:"YouTube",    url:"https://www.youtube.com",     host:"youtube.com",   m:"▶", c:"#e62117"},
+  {name:"Proton Mail",url:"https://mail.proton.me",      host:"mail.proton.me",m:"P", c:"#6d4aff"},
+];
+const FEEDS = {
+  bbc:    "https://feeds.bbci.co.uk/news/rss.xml",
+  celtic: "https://feeds.bbci.co.uk/sport/football/teams/celtic/rss.xml",
+  tc:     "https://www.talkceltic.net/forums/forums/-/index.rss",
+  itch:   "https://itch.io/feed/featured.xml",
+};
+/* NI watch: words to look for (any one matches) and the sites to search */
+const WATCH_WORDS = ["homeless", "Simon Community", "Homeless Connect"];
+const NI_SITES = ["belfasttelegraph.co.uk", "irishnews.com", "belfastlive.co.uk", "newsletter.co.uk", "derryjournal.com"];
+const WATCH_DAYS = 30;
+const HIDE_SHORTS = true;
+const YT_PER_LOAD = 40;    // channels checked each time the page loads or refreshes
+const YT_STALE_MIN = 60;   // re-check a channel after this many minutes
+const REFRESH_MIN = 10;
+/* ================================= */
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k,d){try{const v=localStorage.getItem("stufax:"+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("stufax:"+k,JSON.stringify(v))}catch(e){}}
+};
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const strip = s => { const t=document.createElement("textarea"); let v=String(s||"").replace(/<[^>]*>/g," "); for(let i=0;i<2;i++){t.innerHTML=v;v=t.value;} return v.replace(/\s+/g," ").trim(); };
+
+/* settings built in by the locker: applied when they're newer than what this device has */
+const SEED=window.STUFAX_SEED;
+if(SEED&&SEED.at>store.get("seedAt",0)){
+  if(SEED.yt) store.set("yt",SEED.yt);
+  if(SEED.wxloc) store.set("wxloc",SEED.wxloc);
+  if(SEED.watch) store.set("watch",SEED.watch);
+  store.set("seedAt",SEED.at);
+}
+
+/* one-off tidy: clear feed copies saved by older versions (they could fill the browser's storage) */
+try{ if(!localStorage.getItem("stufax:v4")){
+  Object.keys(localStorage).filter(k=>k.startsWith("stufax:feed")).forEach(k=>localStorage.removeItem(k));
+  localStorage.setItem("stufax:v4","1"); } }catch(e){}
+
+/* clock + greeting */
+function tick(){
+  const n=new Date();
+  const hm=n.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  $("clock").innerHTML=`${hm}<small>${String(n.getSeconds()).padStart(2,"0")}</small>`;
+  $("date").textContent=n.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  const h=n.getHours();
+  const g=h<5?"Up late":h<12?"Morning":h<18?"Afternoon":"Evening";
+  $("greet").innerHTML=`${g}, <span>Stuart</span>`;
+}
+tick(); setInterval(tick,1000);
+
+/* site launcher */
+$("sites").innerHTML=SITES.map(s=>
+  `<a class="site" style="--c:${s.c}" href="${s.url}" target="_blank" rel="noopener">
+     <span class="mono">${s.m}</span><span><b>${esc(s.name)}</b><small>${esc(s.host)}</small></span></a>`).join("");
+document.addEventListener("keydown",e=>{
+  if(e.target.matches("input")||e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.key==="/"){e.preventDefault();$("q").focus();return;}
+  const i=parseInt(e.key,10)-1;
+  if(i>=0&&i<SITES.length) window.open(SITES[i].url,"_blank");
+});
+
+/* dates */
+function ago(d){
+  if(!d||isNaN(d)) return "";
+  const m=Math.round((Date.now()-d)/60000);
+  if(m<1) return "just now"; if(m<60) return m+"m ago";
+  const h=Math.round(m/60); if(h<24) return h+"h ago";
+  const days=Math.round(h/24); return days===1?"yesterday":days+" days ago";
+}
+function parseDate(s){
+  if(!s) return null;
+  if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) s=s.replace(" ","T")+"Z";
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+
+/* feeds: rss2json first, then allorigins + XML parse; last good copy kept */
+function tfetch(u,ms=9000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(u,{signal:c.signal}).finally(()=>clearTimeout(t))}
+async function viaRss2json(url){
+  const r=await tfetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(url));
+  const j=await r.json();
+  if(j.status!=="ok") throw new Error(j.message||"feed error");
+  return j.items.map(it=>({title:strip(it.title),link:it.link,date:it.pubDate,desc:strip(it.description),
+    thumb:it.thumbnail||(it.enclosure&&it.enclosure.link)||""}));
+}
+async function viaProxy(proxy,url){
+  const r=await tfetch(proxy+encodeURIComponent(url));
+  if(!r.ok) throw new Error("proxy "+r.status);
+  const doc=new DOMParser().parseFromString(await r.text(),"text/xml");
+  const items=[...doc.querySelectorAll("item, entry")];
+  if(!items.length) throw new Error("empty");
+  return items.map(n=>{
+    const t=sel=>n.getElementsByTagName(sel)[0];
+    const linkEl=t("link"); const thumbEl=t("media:thumbnail")||t("enclosure");
+    return {title:strip(t("title")?.textContent),
+      link:linkEl?(linkEl.getAttribute("href")||linkEl.textContent):"",
+      date:(t("pubDate")||t("published")||t("updated"))?.textContent,
+      desc:strip((t("description")||t("media:description"))?.textContent),
+      thumb:thumbEl?.getAttribute("url")||""};
+  });
+}
+async function getFeed(key,url,maxMin=REFRESH_MIN){
+  const cached=store.get("feed2:"+key);
+  if(cached&&(Date.now()-cached.at<maxMin*60000)) return cached.items;
+  try{
+    const items=trim(await fetchFeed(url),15);
+    store.set("feed2:"+key,{at:Date.now(),items});
+    return items;
+  }catch(e){ if(cached) return cached.items; throw e; }
+}
+/* try each free service in turn; each gives up after 9 seconds */
+async function fetchFeed(url){
+  try{return await viaRss2json(url)}catch(e){}
+  try{return await viaProxy("https://api.allorigins.win/raw?url=",url)}catch(e){}
+  return await viaProxy("https://api.codetabs.com/v1/proxy?quest=",url);
+}
+/* keep stored copies small so the browser's storage doesn't fill up */
+const trim=(items,n)=>items.slice(0,n).map(it=>({title:it.title,link:it.link,date:it.date,desc:(it.desc||"").slice(0,300),thumb:it.thumb}));
+function fail(el,site,link){
+  el.innerHTML=`<div class="msg err">Couldn't load ${esc(site)} right now. It'll try again in a few minutes.</div>
+    <a class="msg" style="display:block;font-weight:600" href="${link}" target="_blank" rel="noopener">Open ${esc(site)} ↗</a>`;
+}
+
+/* renderers */
+const listItems=(items,n)=>items.slice(0,n).map(it=>`
+  <a class="item" href="${esc(it.link)}" target="_blank" rel="noopener">
+    <span class="h">${esc(it.title)}</span><time>${ago(parseDate(it.date))}</time></a>`).join("");
+
+async function loadBBC(){
+  const el=$("bbc");
+  try{
+    const [lead,...rest]=await getFeed("bbc",FEEDS.bbc);
+    el.innerHTML=`
+      <a class="lead" href="${esc(lead.link)}" target="_blank" rel="noopener">
+        ${lead.thumb?`<img src="${esc(lead.thumb.replace(/\/240\//,"/624/"))}" alt="">`:""}
+        <div><h3>${esc(lead.title)}</h3><p>${esc(lead.desc)}</p><time>${ago(parseDate(lead.date))}</time></div>
+      </a>${listItems(rest,8)}`;
+  }catch(e){fail(el,"BBC News","https://www.bbc.co.uk/news")}
+}
+async function loadList(key,id,site,link,n){
+  try{$(id).innerHTML=listItems(await getFeed(key,FEEDS[key]),n)}
+  catch(e){fail($(id),site,link)}
+}
+async function loadItch(){
+  const el=$("itch");
+  try{
+    const items=(await getFeed("itch",FEEDS.itch)).slice(0,6);
+    el.innerHTML=`<div class="tiles">${items.map(it=>{
+      const name=it.title.replace(/\s*\[.*$/,"");
+      const tags=(it.title.match(/\[[^\]]+\]/g)||[]).map(t=>t.slice(1,-1)).slice(0,2).join(" · ");
+      return `<a class="tile" href="${esc(it.link)}" target="_blank" rel="noopener">
+        <img src="${esc(it.thumb)}" alt="" loading="lazy">
+        <span class="h">${esc(name)}</span><span class="m">${esc(tags)}</span></a>`}).join("")}</div>`;
+  }catch(e){fail(el,"Itch.io","https://itch.io/games/featured")}
+}
+
+/* YouTube: subscriptions imported from Google Takeout (subscriptions.csv), or added one by one */
+const ytChannels=()=>store.get("yt",[]);
+let ytManage=false;
+function ytId(link){const m=String(link).match(/[?&]v=([\w-]{11})/)||String(link).match(/shorts\/([\w-]{11})/);return m?m[1]:""}
+async function pool(list,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,list.length)},async()=>{while(i<list.length){const x=list[i++];try{await fn(x)}catch(e){}}}))}
+function parseSubsCsv(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(line=>{
+    const m=line.match(/UC[\w-]{22}/); if(!m) return;
+    const cells=[...line.matchAll(/("([^"]|"")*"|[^,]*)(,|$)/g)].map(x=>x[1].replace(/^"|"$/g,"").replace(/""/g,'"')).filter((x,i,a)=>i<a.length-1||x);
+    out.push({id:m[0],name:(cells[2]||cells[cells.length-1]||"").trim()});
+  });
+  return out;
+}
+function ytControls(chans){
+  return `
+    <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:6px">
+    <p class="hint"><b>Import all your subscriptions:</b> get <i>subscriptions.csv</i> from Google Takeout (YouTube → subscriptions only), then choose it here.</p>
+    <div class="inline-form"><input type="file" id="yt-file" accept=".csv,text/csv" aria-label="Import subscriptions.csv"></div>
+    <form class="inline-form" id="yt-form">
+      <input id="yt-in" placeholder="Or paste one channel ID (starts with UC…)" aria-label="YouTube channel ID">
+      <button type="submit">Add</button>
+    </form>
+    ${chans.length?`<details class="chlist" id="yt-list"${ytListOpen?" open":""}>
+      <summary>${ytListOpen?"Hide":"Show"} your ${chans.length} channels</summary>
+      <input id="yt-filter" class="filter" placeholder="Find a channel" aria-label="Find a channel" value="${esc(ytFilter)}">
+      <div class="chips">${chans.map(c=>`<button type="button" class="chip" data-id="${esc(c.id)}" data-n="${esc((c.name||c.id).toLowerCase())}" title="Remove">${esc(c.name||c.id.slice(0,10)+"…")} ✕</button>`).join("")}</div>
+      <p class="hint"><button type="button" class="chip" id="yt-clear">Remove all ${chans.length} channels</button></p>
+    </details>`:""}
+    </div>`;
+}
+async function loadYT(){
+  const el=$("yt"); const chans=ytChannels();
+  $("yt-manage").hidden=!chans.length;
+  if(!chans.length){
+    el.innerHTML=`<div class="msg">No channels yet. Import your subscriptions and their newest videos show up here.</div>${ytControls(chans)}`;
+    bindYT(); return;
+  }
+  if(ytBusy){ytAgain=true;ytRender(chans,"Checking channels…");return;}
+  ytBusy=true;
+  /* channels never checked, or not checked for an hour, oldest first; a batch per visit */
+  const due=chans.map(c=>({c,at:(store.get("feed2:yt:"+c.id)||{at:0}).at}))
+    .filter(x=>Date.now()-x.at>YT_STALE_MIN*60000).sort((a,b)=>a.at-b.at).slice(0,YT_PER_LOAD);
+  let done=0, failed=0;
+  ytRender(chans, due.length?`Checking ${due.length} channels…`:"");
+  await pool(due,4,async ({c})=>{
+    try{
+      const items=await fetchFeed("https://www.youtube.com/feeds/videos.xml?channel_id="+c.id);
+      store.set("feed2:yt:"+c.id,{at:Date.now(),items:items.slice(0,4).map(it=>({title:it.title,link:it.link,date:it.date}))});
+    }catch(e){failed++}
+    done++;
+    if(done%4===0) ytRender(chans,`Checking channels… ${done} of ${due.length}`);
+  });
+  const left=chans.filter(c=>!store.get("feed2:yt:"+c.id)).length;
+  ytRender(chans,[
+    failed?`${failed} channel${failed>1?"s":""} didn't respond and will be retried.`:"",
+    left?`${left} channels still to check. More are checked each time the page loads.`:""].filter(Boolean).join(" "));
+  ytBusy=false;
+  if(ytAgain){ytAgain=false;loadYT();}
+}
+let ytBusy=false, ytAgain=false;
+function ytRender(chans,status=""){
+  const el=$("yt"); const all=[];
+  chans.forEach(c=>{const f=store.get("feed2:yt:"+c.id);if(f) f.items.forEach(it=>all.push({...it,ch:c.name}))});
+  const vids=all.filter(it=>!(HIDE_SHORTS&&/\/shorts\//.test(it.link)))
+    .sort((a,b)=>(parseDate(b.date)||0)-(parseDate(a.date)||0)).slice(0,12);
+  el.innerHTML=(vids.length?`<div class="tiles">${vids.map(it=>{
+      const id=ytId(it.link);
+      return `<a class="tile" href="${esc(it.link)}" target="_blank" rel="noopener">
+        <img src="${id?`https://i.ytimg.com/vi/${id}/mqdefault.jpg`:""}" alt="" loading="lazy">
+        <span class="h">${esc(it.title)}</span><span class="m">${esc(it.ch?it.ch+" · ":"")}${ago(parseDate(it.date))}</span></a>`}).join("")}</div>`
+    :(status?`<div class="skel"></div><div class="skel"></div>`:`<div class="msg err">Couldn't load any of your channels yet. The feed services may be busy. It'll try again in a few minutes.</div>`))
+    +(status?`<p class="hint">${esc(status)}</p>`:"")
+    +(ytManage?ytControls(chans):"");
+  bindYT();
+}
+function saveChans(list){store.set("yt",list);loadYT();}
+function bindYT(){
+  const f=$("yt-form"); if(!f) return;
+  f.addEventListener("submit",e=>{
+    e.preventDefault();
+    const m=$("yt-in").value.trim().match(/UC[\w-]{22}/);
+    if(!m){$("yt-in").value="";$("yt-in").placeholder="That isn't a channel ID. It starts with UC";return;}
+    const chans=ytChannels(); if(!chans.some(c=>c.id===m[0])) chans.push({id:m[0]});
+    saveChans(chans);
+  });
+  $("yt-file").addEventListener("change",e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      const found=parseSubsCsv(r.result); const chans=ytChannels();
+      found.forEach(c=>{if(!chans.some(x=>x.id===c.id)) chans.push(c)});
+      ytManage=false; $("yt-manage").textContent="Manage"; saveChans(chans);
+    };
+    r.readAsText(file);
+  });
+  document.querySelectorAll("#yt .chip[data-id]").forEach(b=>b.addEventListener("click",()=>
+    saveChans(ytChannels().filter(c=>c.id!==b.dataset.id))));
+  const list=$("yt-list");
+  if(list){
+    list.addEventListener("toggle",()=>{ytListOpen=list.open;list.querySelector("summary").textContent=`${list.open?"Hide":"Show"} your ${ytChannels().length} channels`;});
+    const fl=$("yt-filter");
+    const apply=()=>{ytFilter=fl.value;const q=fl.value.trim().toLowerCase();list.querySelectorAll(".chip[data-n]").forEach(b=>b.hidden=q&&!b.dataset.n.includes(q));};
+    fl.addEventListener("input",apply); apply();
+  }
+  const clr=$("yt-clear");
+  if(clr) clr.addEventListener("click",()=>{
+    if(clr.dataset.sure){saveChans([]);return;}
+    clr.dataset.sure="1"; clr.textContent="Click again to remove them all";
+  });
+}
+let ytListOpen=false, ytFilter="";
+$("yt-manage").addEventListener("click",()=>{
+  ytManage=!ytManage; $("yt-manage").textContent=ytManage?"Done":"Manage";
+  ytRender(ytChannels());
+});
+
+/* NI watch: Google News search, limited to Northern Ireland sites */
+const watchWords=()=>store.get("watch",WATCH_WORDS);
+let watchEditing=false;
+function watchUrl(words){
+  const w=words.map(x=>/\s/.test(x)?`"${x}"`:x).join(" OR ");
+  const s=NI_SITES.map(x=>"site:"+x).join(" OR ");
+  return "https://news.google.com/rss/search?q="+encodeURIComponent(`(${w}) (${s}) when:${WATCH_DAYS}d`)+"&hl=en-GB&gl=GB&ceid=GB:en";
+}
+async function loadWatch(){
+  const el=$("watch"); const words=watchWords();
+  const editor=`
+    <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:4px">
+      <div class="chips">${words.map(w=>`<button type="button" class="chip" data-w="${esc(w)}" title="Remove">${esc(w)} ✕</button>`).join("")}</div>
+      <form class="inline-form" id="watch-form"><input id="watch-in" placeholder="Add a word or phrase" aria-label="Add a word or phrase"><button type="submit">Add</button></form>
+      <p class="hint">Any one word matches. Searching ${NI_SITES.length} NI news sites, last ${WATCH_DAYS} days.</p>
+    </div>`;
+  if(!words.length){el.innerHTML=`<div class="msg">Add a word to start watching.</div>${editor}`;bindWatch();return;}
+  try{
+    const key="watch:"+words.join("|");
+    const items=(await getFeed(key,watchUrl(words),30))
+      .sort((a,b)=>(parseDate(b.date)||0)-(parseDate(a.date)||0)).slice(0,10);
+    el.innerHTML=(items.length?items.map(it=>{
+      const cut=it.title.lastIndexOf(" - ");
+      const head=cut>0?it.title.slice(0,cut):it.title, src=cut>0?it.title.slice(cut+3):"";
+      return `<a class="item" href="${esc(it.link)}" target="_blank" rel="noopener">
+        <span class="h">${esc(head)}<span style="display:block;font:500 12px var(--body);color:var(--dim)">${esc(src)}</span></span>
+        <time>${ago(parseDate(it.date))}</time></a>`}).join("")
+      :`<div class="msg">Nothing matching in the last ${WATCH_DAYS} days.</div>`)
+      +(watchEditing?editor:"");
+  }catch(e){el.innerHTML=`<div class="msg err">Couldn't load the news search right now. It'll try again in a few minutes.</div>`+(watchEditing?editor:"");}
+  bindWatch();
+}
+function bindWatch(){
+  const f=$("watch-form"); if(!f) return;
+  f.addEventListener("submit",e=>{
+    e.preventDefault(); const v=$("watch-in").value.trim().replace(/"/g,""); if(!v) return;
+    const w=watchWords(); if(!w.includes(v)) w.push(v); store.set("watch",w); loadWatch();
+  });
+  document.querySelectorAll("#watch .chip[data-w]").forEach(b=>b.addEventListener("click",()=>{
+    store.set("watch",watchWords().filter(x=>x!==b.dataset.w)); loadWatch();
+  }));
+}
+$("watch-edit").addEventListener("click",()=>{watchEditing=!watchEditing;$("watch-edit").textContent=watchEditing?"Done":"Edit words";loadWatch();});
+
+/* weather: Open-Meteo, free, no key */
+const WX={0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",45:"Fog",48:"Freezing fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",
+  61:"Light rain",63:"Rain",65:"Heavy rain",66:"Freezing rain",67:"Freezing rain",71:"Light snow",73:"Snow",75:"Heavy snow",77:"Snow grains",
+  80:"Showers",81:"Showers",82:"Heavy showers",85:"Snow showers",86:"Snow showers",95:"Thunderstorm",96:"Thunder & hail",99:"Thunder & hail"};
+/* compact weather beside the clock; click the town name to change it */
+function wxForm(msg){
+  const had=store.get("wxloc",null);
+  $("wx").innerHTML=`
+    <form id="wx-form"><input id="wx-in" placeholder="Your town" aria-label="Town for weather"><button type="submit">Set</button></form>
+    <span class="note">${msg||(had?`<button type="button" class="wxc-loc" id="wx-cancel">Keep ${esc(had.name)}</button>`:"Set a town for the weather")}</span>`;
+  $("wx-in").focus();
+  const cancel=$("wx-cancel"); if(cancel) cancel.addEventListener("click",loadWX);
+  $("wx-form").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const q=$("wx-in").value.trim(); if(!q) return;
+    try{
+      const r=await (await tfetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=en`)).json();
+      const p=r.results&&r.results[0]; if(!p){wxForm(`Couldn't find "${esc(q)}". Try another spelling.`);return;}
+      store.set("wxloc",{name:p.name,lat:p.latitude,lon:p.longitude}); loadWX();
+    }catch(err){wxForm("The weather service didn't answer. Try again in a minute.")}
+  });
+}
+async function loadWX(){
+  const loc=store.get("wxloc",null);
+  if(!loc){wxForm();return;}
+  if(document.activeElement&&document.activeElement.id==="wx-in") return; // don't wipe the box while typing
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=3&wind_speed_unit=mph`;
+    const d=await (await tfetch(u)).json(); const c=d.current, dy=d.daily;
+    const day=i=>new Date(dy.time[i]).toLocaleDateString("en-GB",{weekday:"short"});
+    $("wx").innerHTML=`
+      <div class="wxc-now">
+        <span class="wxc-t">${Math.round(c.temperature_2m)}°</span>
+        <div><b>${WX[c.weather_code]||""}</b>
+          <button type="button" class="wxc-loc" id="wx-change" title="Change town">${esc(loc.name)} · feels ${Math.round(c.apparent_temperature)}° · ${dy.precipitation_probability_max[0]??0}% rain</button></div>
+      </div>
+      <div class="wxc-days">
+        <span>Today <b>${Math.round(dy.temperature_2m_max[0])}°/${Math.round(dy.temperature_2m_min[0])}°</b></span>
+        ${[1,2].map(i=>`<span title="${WX[dy.weather_code[i]]||""}, ${dy.precipitation_probability_max[i]??0}% rain">${day(i)} <b>${Math.round(dy.temperature_2m_max[i])}°/${Math.round(dy.temperature_2m_min[i])}°</b></span>`).join("")}
+      </div>`;
+    $("wx-change").addEventListener("click",()=>wxForm());
+  }catch(e){$("wx").innerHTML=`<span class="note">Weather didn't load. Trying again shortly.</span>`}
+}
+
+/* settings export for the locker, and forgetting the password on this device */
+$("copy-settings").addEventListener("click",async()=>{
+  const data=JSON.stringify({yt:ytChannels(),wxloc:store.get("wxloc",null),watch:watchWords()});
+  const btn=$("copy-settings"), out=$("settings-out");
+  try{ await navigator.clipboard.writeText(data); btn.textContent="Copied. Paste it into the locker"; }
+  catch(e){ out.hidden=false; out.value=data; out.select(); btn.textContent="Copy the text below (Ctrl+C)"; }
+});
+try{ if(localStorage.getItem("stufax:key")) $("lock-device").hidden=false; }catch(e){}
+$("lock-device").addEventListener("click",()=>{ try{localStorage.removeItem("stufax:key")}catch(e){} location.reload(); });
+
+/* go */
+function loadAll(){
+  loadBBC();
+  loadList("celtic","celtic","BBC Sport","https://www.bbc.co.uk/sport/football/teams/celtic",7);
+  loadList("tc","tc","Talkceltic","https://www.talkceltic.net/forums/whats-new/",7);
+  loadItch(); loadYT(); loadWX(); loadWatch();
+}
+loadAll();
+setInterval(loadAll,REFRESH_MIN*60000+5000);
+</script>
+</body>
+</html>
